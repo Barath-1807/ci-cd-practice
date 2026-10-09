@@ -15,6 +15,10 @@ public class CICDController {
     public ResponseEntity<String> getCICDStatus() {
         return ResponseEntity.ok("CICD is running successfully!");
     }
+    @GetMapping("/app1")
+    public ResponseEntity<String> getCICDapp1() {
+        return ResponseEntity.ok("CICD app1 is running successfully!");
+    }
 
     @GetMapping("/newstatus")
     public ResponseEntity<Map<String, String>> getCICDStatusWithDetails() {
