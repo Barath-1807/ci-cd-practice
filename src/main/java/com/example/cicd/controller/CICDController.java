@@ -13,7 +13,7 @@ public class CICDController {
 
     @GetMapping("/status")
     public ResponseEntity<String> getCICDStatus() {
-        return ResponseEntity.ok("CICD is running successfully!");
+        return ResponseEntity.ok("LB-CICD is running successfully!");
     }
     @GetMapping("/app1")
     public ResponseEntity<String> getCICDapp1() {
