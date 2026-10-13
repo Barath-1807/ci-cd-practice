@@ -59,18 +59,59 @@ jobs:
           script: |
             set -e
 
-            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            echo "===== Setting up Docker on Server 1 ====="
 
-            docker stop spring-boot-app || true
-            docker rm spring-boot-app || true
+            # Check whether Docker is installed
+            if ! command -v docker >/dev/null 2>&1; then
+              echo "Docker is not installed. Installing Docker..."
 
-            docker run -d \
+              if command -v apt-get >/dev/null 2>&1; then
+                sudo apt-get update
+                sudo apt-get install -y docker.io
+              elif command -v dnf >/dev/null 2>&1; then
+                sudo dnf install -y docker
+              elif command -v yum >/dev/null 2>&1; then
+                sudo yum install -y docker
+              else
+                echo "Unsupported operating system. Install Docker manually."
+                exit 1
+              fi
+            else
+              echo "Docker is already installed."
+            fi
+
+            # Start Docker and enable it at boot
+            sudo systemctl enable --now docker
+
+            # Add the SSH user to the Docker group
+            sudo usermod -aG docker "$USER" || true
+
+            # Verify Docker installation
+            sudo docker --version
+            sudo docker info
+
+            echo "===== Pulling image on Server 1 ====="
+
+            # Pull the latest image
+            sudo docker pull \
+              ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+            # Stop and remove the existing container
+            sudo docker stop spring-boot-app || true
+            sudo docker rm spring-boot-app || true
+
+            # Run the new container
+            sudo docker run -d \
               --name spring-boot-app \
               --restart unless-stopped \
               -p 8080:8080 \
               ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
-            docker image prune -f
+            # Remove unused images
+            sudo docker image prune -f
+
+            # Verify the running container
+            sudo docker ps
 
       # Step 8: Deploy to EC2 Server 2
       - name: Deploy to Server 2
@@ -82,15 +123,56 @@ jobs:
           script: |
             set -e
 
-            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            echo "===== Setting up Docker on Server 2 ====="
 
-            docker stop spring-boot-app || true
-            docker rm spring-boot-app || true
+            # Check whether Docker is installed
+            if ! command -v docker >/dev/null 2>&1; then
+              echo "Docker is not installed. Installing Docker..."
 
-            docker run -d \
+              if command -v apt-get >/dev/null 2>&1; then
+                sudo apt-get update
+                sudo apt-get install -y docker.io
+              elif command -v dnf >/dev/null 2>&1; then
+                sudo dnf install -y docker
+              elif command -v yum >/dev/null 2>&1; then
+                sudo yum install -y docker
+              else
+                echo "Unsupported operating system. Install Docker manually."
+                exit 1
+              fi
+            else
+              echo "Docker is already installed."
+            fi
+
+            # Start Docker and enable it at boot
+            sudo systemctl enable --now docker
+
+            # Add the SSH user to the Docker group
+            sudo usermod -aG docker "$USER" || true
+
+            # Verify Docker installation
+            sudo docker --version
+            sudo docker info
+
+            echo "===== Pulling image on Server 2 ====="
+
+            # Pull the latest image
+            sudo docker pull \
+              ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+            # Stop and remove the existing container
+            sudo docker stop spring-boot-app || true
+            sudo docker rm spring-boot-app || true
+
+            # Run the new container
+            sudo docker run -d \
               --name spring-boot-app \
               --restart unless-stopped \
               -p 8080:8080 \
               ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
-            docker image prune -f
+            # Remove unused images
+            sudo docker image prune -f
+
+            # Verify the running container
+            sudo docker ps
