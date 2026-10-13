@@ -39,19 +39,45 @@ jobs:
       # Step 5: Build Docker image
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest .
+          docker build \
+            -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest \
+            .
 
-      # Step 6: Push Docker image to Docker Hub
+      # Step 6: Push Docker image
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          docker push \
+            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
-      # Step 7: Deploy application to server
-      - name: Deploy to server
+      # Step 7: Deploy to EC2 Server 1
+      - name: Deploy to Server 1
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+            docker stop spring-boot-app || true
+            docker rm spring-boot-app || true
+
+            docker run -d \
+              --name spring-boot-app \
+              --restart unless-stopped \
+              -p 8080:8080 \
+              ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+            docker image prune -f
+
+      # Step 8: Deploy to EC2 Server 2
+      - name: Deploy to Server 2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER2_HOST }}
+          username: ${{ secrets.SERVER2_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             set -e
